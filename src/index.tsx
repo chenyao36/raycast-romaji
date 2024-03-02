@@ -27,7 +27,7 @@ export default function Command() {
         method: 'POST',
         body: JSON.stringify({
           model: 'gemma:7b',
-          prompt: "You are a professional translator. Please translate the following Japanese text into English. Start right away with the translation without any explanation.\n\n" + searchText,
+          prompt: "You are a professional translator. Please translate the following Japanese text into English and Chinese. Start right away with the translation without any explanation.\n\n" + searchText,
         }),
         execute,
         parseResponse: parseFetchResponseForEnglish,
@@ -92,13 +92,9 @@ async function parseFetchResponseForRomaji(response: Response) {
 
 async function parseFetchResponseForEnglish(response: Response) {
   const text = (await response.text());
-  const outputParts = [];
-  for (let row of text.split('\n')) {
-    if (row.length) {
-      outputParts.push(JSON.parse(row).response);
-    }
-  }
-  const output = outputParts
+  const output = text.split('\n')
+    .filter(row => row.length > 0)
+    .map(row => JSON.parse(row).response)
     .join('')
     .split('\n')
     .filter((row) => {
@@ -111,6 +107,13 @@ async function parseFetchResponseForEnglish(response: Response) {
         return false;
       } else {
         return true;
+      }
+    })
+    .map(row => {
+      if (row.startsWith('"') && row.endsWith('"')) {
+        return row.substring(1, row.length - 1);
+      } else {
+        return row;
       }
     })
     .join('\n')
